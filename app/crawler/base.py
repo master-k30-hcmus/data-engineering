@@ -2,9 +2,16 @@ import requests
 import requests_random_user_agent  # get random user agent
 from bs4 import BeautifulSoup
 from lxml import html
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 class BaseCrawler:
+    def __init__(self):
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.headless = True
+        self.browser = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+
     @staticmethod
     def _request(url):
         user_agent = requests.Session().headers['User-Agent']
