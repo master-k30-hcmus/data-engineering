@@ -1,6 +1,7 @@
 from .base import BaseCrawler
 from time import sleep
-from app.config import config
+from config import config
+
 
 
 class RepoCrawler(BaseCrawler):
