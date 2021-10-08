@@ -1,17 +1,7 @@
+import re
+from time import sleep
 from .repository import RepoCrawler
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
-
-import re
-import time
 
 class TopicCrawler(RepoCrawler):
     def __init__(self):
@@ -28,6 +18,7 @@ class TopicCrawler(RepoCrawler):
         topics = [t.replace("Topic: ", "") for t in topics]
         all_repos = []
         for topic in topics:
+            print(f"Crawl topic [{topic}]")
             repos = self._parse_topic_page(topic)
             all_repos.extend(repos)
             break
@@ -35,44 +26,33 @@ class TopicCrawler(RepoCrawler):
 
     def _parse_topic_page(self, topic: str):
         topic_url = f'{self.base_url}/{topic}?{self.query_params}'
-        print(topic_url)
-        chrome_options = webdriver.ChromeOptions() 
-        chrome_options.add_argument("start-maximized")
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+        self.browser.get(topic_url)
 
-        driver.get(topic_url)
+        # TODO: uncomment later when app's stable
+        # while True:
+        #     try:
+        #         WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-pjax-container"]/div[2]/div[2]/div/div[1]/form/button'))).click()
+        #         time.sleep(3)
+        #     except TimeoutException:
+        #         print("No more LOAD MORE RESULTS button to be clicked")
+        #         break
 
-        while True:
-            try:
-                WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-pjax-container"]/div[2]/div[2]/div/div[1]/form/button'))).click()
-                time.sleep(3)
-            except TimeoutException:
-                print("No more LOAD MORE RESULTS button to be clicked")
-                break
-        print("Complete")
-        time.sleep(10)
-        page_source = driver.page_source
-        driver.quit()
-        soup = BeautifulSoup(page_source, 'lxml')
-        links = soup.find_all('h3', class_ = "f3 color-text-secondary text-normal lh-condensed")
-        topics_info = soup.find_all('h2', class_ ='h3 color-text-secondary')
-        topic_info = topics_info[0].text.replace(",","")
+        page_source = self.browser.page_source
+
+        topic_info = self.find_one_by_xpath(page_source, '//h2[@class="h3 color-text-secondary"]/text()')
+        topic_info = topic_info.replace(",", "")
         num_repo = re.findall(r'\d+', topic_info)
-        print("Number of repo in this topic:", num_repo[0])
-        repos = []
+        print(f"Total {num_repo[0]} repos")
 
-        count = 0
-        for link in links:
-            if count == 10:
-                break
-            repo_raw = link.text.replace(" ", "")
-            repo_raw = repo_raw.replace("\n", "")
-            repo_raw = re.split('/', repo_raw)
-            link_repo = f'https://github.com/{repo_raw[0]}/{repo_raw[1]}'
-            print("Repo need to prase: ",link_repo)
-            repo = self.parse_repo(link_repo)
+        hrefs = self.find_by_xpath(page_source, '//div[@class="col-md-8 col-lg-9"]/article/div[1]/div/div[1]/h3/a[2]/@href')
+        print(f"Found {len(hrefs)} hrefs")
+
+        repos = []
+        for href in hrefs[:5]:
+            url = 'https://github.com' + href
+            print(f"Parsing repo {url}")
+            repo = self.parse_repo(url)
             if repo:
                 repo.update({"topic": topic})
                 repos.append(repo)
-            count = count + 1
         return repos

@@ -3,7 +3,6 @@ from time import sleep
 from config import config
 
 
-
 class RepoCrawler(BaseCrawler):
     """
     Crawl a repository's information
@@ -13,8 +12,8 @@ class RepoCrawler(BaseCrawler):
         retry = 0
         while retry < config['MAX_FETCH_RETRY']:
             try:
-                soup = self.make_soup(url=url)
-                page_source = soup.prettify()
+                self.browser.get(url)
+                page_source = self.browser.page_source
 
                 # fetch number of issues
                 num_issues = self.find_one_by_xpath(page_source, '//*[@id="issues-tab"]/span[@class="Counter"]/@title')
@@ -44,6 +43,9 @@ class RepoCrawler(BaseCrawler):
                 }
                 return repo
             except Exception:
+                self.browser.refresh()
                 retry += 1
-                sleep(2)
+                sleep(3)
+
+        print(f"Max fetch retry. Skipped repo {url}")
         return dict()
