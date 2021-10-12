@@ -15,6 +15,7 @@ if __name__ == '__main__':
     topic_crawler = TopicCrawler()
     repos = topic_crawler.crawl()
     # TODO: add index to update duplicated repos
+    print(f"Insert {len(repos)} repos")
     topics_col.insert_many(repos)
 
     trending_crawler = TrendingCrawler()
@@ -23,5 +24,4 @@ if __name__ == '__main__':
 
     for item in topics_col.find():
         pprint(item)
-
     db.close()

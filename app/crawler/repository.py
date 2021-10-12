@@ -1,7 +1,9 @@
+
 import json
 from app.config import config
 from app.config.github_api import GithubAPI
 from app.crawler.base import BaseCrawler
+
 
 
 class RepoCrawler(BaseCrawler):
@@ -24,3 +26,4 @@ class RepoCrawler(BaseCrawler):
         for feat in feats:
           repo.update({feat : self.api.get_repo_feature(repo_name, feat)})
         return repo
+
