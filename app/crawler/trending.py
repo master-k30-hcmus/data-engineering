@@ -1,5 +1,7 @@
+import time
+from tqdm import tqdm
 from app.crawler.repository import RepoCrawler
-
+from app.config import config
 
 class TrendingCrawler(RepoCrawler):
     def __init__(self):
@@ -26,7 +28,7 @@ class TrendingCrawler(RepoCrawler):
             # wrap up components
             repo_info = {
                 'name': repo_name,
-                'link': f"https://github.com/{repo_name}",
+                'link': f"https://github.com{repo_name}",
                 'rank': ith,
                 'today_star': today_star
             }
@@ -39,27 +41,9 @@ class TrendingCrawler(RepoCrawler):
         # get trending page
         repo_pool = self._crawl_trending_page()
         num_repo = len(repo_pool)
+        print(f'Fetch {num_repo} repositories')
         # get each repo page
-        for idx, repo in enumerate(repo_pool):
-            fetch_tried = 0
-            while 1: # try to fetch until get enough information
-                try:
-                    repo_info = self.parse_repo(repo['link'])
-                    repo_pool[idx].update(repo_info)
-                    if fetch_tried > 0:
-                        logger.warning(f"Sucessfull got information from {repo['link']} after {fetch_tried} times")
-                    break
-                except AttributeError:
-                    fetch_tried+=1
-                    MAX_FETCH_TRIED = 10 
-                    if fetch_tried > MAX_FETCH_TRIED:
-                        logger.warning(f"Cannot get enough information from {repo['link']}")
-                        break
-                    # pause 2s before fetch again
-                    time.sleep(2)
+        for idx, repo in enumerate(tqdm(repo_pool)):
+            repo_info = self.parse_repo(repo['link'])
+            repo_pool[idx].update(repo_info)
         return repo_pool
-
-if __name__=='__main__':
-    crawler = TrendingCrawler()
-    crawler.collect_treding_page()
-
