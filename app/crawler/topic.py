@@ -1,6 +1,5 @@
 import re
-from time import sleep
-from .repository import RepoCrawler
+from app.crawler.repository import RepoCrawler
 
 
 class TopicCrawler(RepoCrawler):
@@ -21,7 +20,6 @@ class TopicCrawler(RepoCrawler):
             print(f"Crawl topic [{topic}]")
             repos = self._parse_topic_page(topic)
             all_repos.extend(repos)
-            break
         return all_repos
 
     def _parse_topic_page(self, topic: str):
@@ -48,7 +46,7 @@ class TopicCrawler(RepoCrawler):
         print(f"Found {len(hrefs)} hrefs")
 
         repos = []
-        for href in hrefs[:5]:
+        for href in hrefs:
             url = 'https://github.com' + href
             print(f"Parsing repo {url}")
             repo = self.parse_repo(url)
