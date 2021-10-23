@@ -11,7 +11,7 @@ class GithubAPI(object):
         headers = {"Authorization": f"token {self.token}"}
         status, headers, data = self._call_api(method='GET', url=f'https://api.github.com/repos/{repo_name}',
                                                headers=headers)
-        return (data)
+        return data
 
     def get_repo_feature(self, repo_name, feature):
         """Request api for repository with specific feature

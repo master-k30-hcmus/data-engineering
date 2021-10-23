@@ -1,11 +1,16 @@
 from tqdm import tqdm
-from app.crawler.repository import RepoCrawler
 from re import findall
+from pymongo.collection import Collection
+
+from app.config.logger import Logger
+from app.crawler.repository import RepoCrawler
 
 
 class TrendingCrawler(RepoCrawler):
-    def __init__(self):
+    def __init__(self, collection: Collection):
         super().__init__()
+        self.logger = Logger(name=type(self).__name__)
+        self.collection = collection
         self.base_url = 'https://github.com/trending'
 
     def _crawl_trending_page(self):
@@ -34,21 +39,30 @@ class TrendingCrawler(RepoCrawler):
                 'rank': ith,
                 'today_star': int(today_star)
             }
-            print(repo_info)
             components.append(repo_info)
 
-        #logger.info('Successfully fetch trending page')
+        self.logger.info('Successfully fetch trending page')
         return components
 
     def crawl(self):
         """ Fetch data for database"""
+        self.logger.info(f'Start crawl trending page')
+
         # get trending page
         repo_pool = self._crawl_trending_page()
         num_repo = len(repo_pool)
-        print(f'Fetch {num_repo} repositories')
+        self.logger.info(f'Fetch {num_repo} repositories')
 
         # get each repo page
         for idx, repo in enumerate(tqdm(repo_pool)):
             repo_info = self.parse_repo(repo['link'])
             repo_pool[idx].update(repo_info)
+
+        self.upsert_many(repo_pool)
+        self.logger.info(f"Upserted {num_repo} trending repos.")
+
         return repo_pool
+
+    def upsert_many(self, repos):
+        for repo in repos:
+            self.collection.update_one(filter={"name": repo.get("name")}, update={"$set": repo}, upsert=True)
